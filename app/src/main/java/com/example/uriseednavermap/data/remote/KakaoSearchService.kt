@@ -15,9 +15,9 @@ interface KakaoSearchService {
     suspend fun searchPlace(
         @Header("Authorization") auth: String = BuildConfig.kakaoApiKey,
         @Query("query") query: String,
-        @Query("x") x: Double? = 127.098,
-        @Query("y") y: Double? = 37.511,
-        @Query("radius") radius: Int? = 5000,
-        @Query("size") size: Int? = 15,
+        @Query("x") x: Double = 127.098,
+        @Query("y") y: Double = 37.511,
+        @Query("size") size: Int = 15,
+        @Query("radius") radius: Int? = null,
     ): ResultSet<Place>
 }

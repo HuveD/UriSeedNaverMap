@@ -6,6 +6,7 @@ import com.example.uriseednavermap.data.model.Place
 import com.example.uriseednavermap.data.model.ResultSet
 import com.example.uriseednavermap.data.repository.MapRepository
 import com.example.uriseednavermap.ui.map.MapUiState
+import com.example.uriseednavermap.ui.map.PlaceTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -20,6 +21,14 @@ class MapViewModel @Inject constructor(
     // Game UI state
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+
+    /**
+     * 장소 검색
+     */
+    fun searchPlace(tab: PlaceTab) {
+        _uiState.update { it.copy(tabIndex = PlaceTab.values().indexOf(tab)) }
+        this.searchPlace(tab.keyword())
+    }
 
     /**
      * 장소 검색
