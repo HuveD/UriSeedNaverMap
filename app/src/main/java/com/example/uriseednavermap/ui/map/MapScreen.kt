@@ -1,25 +1,30 @@
 package com.example.uriseednavermap.ui.map
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
-import androidx.compose.material.TabRowDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.uriseednavermap.ui.theme.Purple200
 import com.example.uriseednavermap.viewmodels.MapViewModel
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.geometry.LatLngBounds
-import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.*
 import kotlinx.coroutines.MainScope
@@ -29,6 +34,41 @@ import kotlinx.coroutines.launch
 @Composable
 fun MapScreen(viewModel: MapViewModel = viewModel()) {
     val mapUiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        if (it) {
+            // Permission Accepted: Do something
+            Log.d("ExampleScreen", "PERMISSION GRANTED")
+
+        } else {
+            // Permission Denied: Do something
+            Log.d("ExampleScreen", "PERMISSION DENIED")
+        }
+    }
+
+    SideEffect {
+        checkPermission(
+            context = context,
+            permission = Manifest.permission.ACCESS_FINE_LOCATION,
+            onDenied = { launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION) },
+        )
+    }
+    when (PackageManager.PERMISSION_GRANTED) {
+        ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) -> {
+            // Some works that require permission
+            Log.d("ExampleScreen", "Code requires permission")
+        }
+        else -> {
+            // Asking for permission
+            SideEffect {
+                launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        }
+    }
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -57,6 +97,7 @@ fun MapScreen(viewModel: MapViewModel = viewModel()) {
             NaverMap(modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.25f),
+                locationSource = rememberFusedLocationSource(),
                 cameraPositionState = mapUiState.cameraPositionState,
                 uiSettings = mapUiState.mapUiSettings,
                 properties = mapUiState.mapProperties,
@@ -86,28 +127,45 @@ fun MapScreen(viewModel: MapViewModel = viewModel()) {
                 )
             }
 
-            if (mapUiState.places.isNotEmpty())
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(16.dp)
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                        )
-                        .align(Alignment.BottomCenter)
-                )
-        }
-
-        if (mapUiState.places.isNotEmpty())
-            Box(
+            if (mapUiState.places.isNotEmpty()) Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .height(16.dp)
                     .background(
                         color = Color.White,
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                     )
+                    .align(Alignment.BottomCenter)
             )
+        }
+
+        if (mapUiState.places.isNotEmpty()) Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    color = Color.White,
+                )
+        ) {
+            LazyColumn {
+                items(mapUiState.places) {
+                    PlaceItemView(place = it)
+                }
+            }
+        }
     }
+}
+
+/**
+ * 퍼미션 체크
+ */
+private fun checkPermission(
+    context: Context,
+    permission: String,
+    onGranted: (() -> Unit)? = null,
+    onDenied: (() -> Unit)? = null,
+) = when (ContextCompat.checkSelfPermission(context, permission)) {
+    PackageManager.PERMISSION_GRANTED -> onGranted?.let { it() }
+    else -> onDenied?.let { it() }
 }
 
 /**
